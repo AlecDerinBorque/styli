@@ -1,0 +1,17 @@
+# Secrets (Supabase keys will live here)
+.env
+
+# Python virtual environment
+venv/
+.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Mac junk
+.DS_Store
+
+# Frontend dependencies
+node_modules/
+env/
