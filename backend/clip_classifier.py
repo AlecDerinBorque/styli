@@ -243,3 +243,7 @@ category_prompts = {
             "clothing for travel"
         ],
     }
+
+from PIL import Image
+from clip_classifier import classify
+print(classify(Image.open("backend/image.png")))
