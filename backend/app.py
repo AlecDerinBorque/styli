@@ -7,6 +7,7 @@ from clip_classifier import classify
 from PIL import Image
 import io
 import base64
+import uuid
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -16,6 +17,7 @@ if not url or not key:
     raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in backend/.env")
 
 supabase: Client = create_client(url, key)
+supabase_auth: Client = create_client(url, key)
 app = Flask(__name__)
 CORS(app,
      origins=["http://localhost:3000"],
@@ -38,7 +40,7 @@ def register_user():
         if not email or not password or not username:
             return jsonify({"error": "Email, password, or username not provided."}), 400
 
-        response = supabase.auth.sign_up({
+        response = supabase_auth.auth.sign_up({
             "email": email,
             "password": password
         })
@@ -60,7 +62,7 @@ def login_user():
         if not email or not password:
             return jsonify({"error": "Email and password are required"}), 400
 
-        auth_response = supabase.auth.sign_in_with_password({
+        auth_response = supabase_auth.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
@@ -83,7 +85,7 @@ def get_user_id_from_token(auth_header):
         if not auth_header or not auth_header.startswith("Bearer "):
             return None
         token = auth_header.split(" ")[1]
-        user = supabase.auth.get_user(token)
+        user = supabase_auth.auth.get_user(token)
         return user.user.id
     except Exception:
         return None
@@ -106,6 +108,83 @@ def classify_clothing():
         return jsonify({"message": classifications}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+
+@app.route('/wardrobe/save-clothing-items', methods=['POST'])
+def save_clothing_items():
+    try:
+        auth_header = request.headers.get("Authorization")
+        user_id = get_user_id_from_token(auth_header)
+        if not user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        new_items = request.get_json()
+
+        for item in new_items:
+            item_copy = item.copy()
+            img_data = item_copy.pop('image', None)
+
+            items_response = supabase.table("clothing_items").insert(item_copy).execute()
+            clothing_id = items_response.data[0]["id"]
+
+            if "," in img_data:
+                img_data = img_data.split(",")[1]
+            image_bytes = base64.b64decode(img_data)
+
+            file_name = f"clothing_{clothing_id}_{uuid.uuid4()}.jpg"
+            file_path = f"user_clothes/user_{user_id}/{file_name}"
+
+            supabase.storage.from_("images").upload(file_path, image_bytes)
+            image_url = supabase.storage.from_("images").get_public_url(file_path)
+
+            supabase.table("clothing_images").insert({
+                "clothing_id": clothing_id,
+                "image_url": image_url,
+                "image_name": file_name,
+                "user_id": user_id
+            }).execute()
+
+        return jsonify(new_items), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+
+@app.route('/wardrobe/fetch-user-items', methods=['GET'])
+def get_wardrobe():
+    try:
+        auth_header = request.headers.get("Authorization")
+        user_id = get_user_id_from_token(auth_header)
+        if not user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        response = (
+            supabase
+            .table("clothing_images")
+            .select("user_id, clothing_id, image_url, clothing_items(*)")
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        wardrobe = []
+        for row in response.data:
+            clothing_data = row["clothing_items"]
+            if not clothing_data:
+                continue
+            wardrobe.append({
+                "image": row["image_url"],
+                "main_category": clothing_data.get("main_category", ""),
+                "sub_category": clothing_data.get("sub_category", ""),
+                "style": clothing_data.get("style", ""),
+                "silhouette": clothing_data.get("silhouette", ""),
+                "color": clothing_data.get("color", ""),
+                "pattern": clothing_data.get("pattern", ""),
+                "season": clothing_data.get("season", ""),
+                "occasion": clothing_data.get("occasion", ""),
+            })
+
+        return jsonify(wardrobe), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
