@@ -8,6 +8,8 @@ from PIL import Image
 import io
 import base64
 import uuid
+from clothing import Clothing
+from outfit_generator import generate_ranked_outfits
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -183,6 +185,62 @@ def get_wardrobe():
             })
 
         return jsonify(wardrobe), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/outfits/generate', methods=['POST'])
+def generate_outfit():
+    try:
+        request_data = request.get_json()
+
+        auth_header = request.headers.get("Authorization")
+        user_id = get_user_id_from_token(auth_header)
+        if not user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        response = (
+            supabase
+            .table("clothing_images")
+            .select("user_id, clothing_id, image_url, clothing_items(*)")
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if not response.data:
+            return jsonify({"outfit": []}), 200
+
+        clothing_list = []
+        for row in response.data:
+            metadata = row.get("clothing_items")
+            if not metadata:
+                continue
+            clothing_list.append(Clothing(
+                row["image_url"], metadata['main_category'], metadata['sub_category'],
+                metadata['style'], metadata['silhouette'], metadata['color'],
+                metadata['pattern'], metadata['season'], metadata['occasion'],
+                row['clothing_id']
+            ))
+
+        generated_outfits = generate_ranked_outfits(clothing_list, request_data)
+
+        formatted_outfits = []
+        for outfit in generated_outfits:
+            formatted_outfit = []
+            for category, clothing_item in outfit.items():
+                if category == "score" or not clothing_item:
+                    continue
+                formatted_outfit.append({
+                    "id": clothing_item.id,
+                    "image": clothing_item.image_url,
+                    "category": category,
+                    "main_category": clothing_item.main_category,
+                    "sub_category": clothing_item.sub_category,
+                    "color": clothing_item.color
+                })
+            if formatted_outfit:
+                formatted_outfits.append(formatted_outfit)
+
+        return jsonify({"outfit": formatted_outfits}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
