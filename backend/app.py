@@ -22,7 +22,7 @@ supabase: Client = create_client(url, key)
 supabase_auth: Client = create_client(url, key)
 app = Flask(__name__)
 CORS(app,
-     origins=["http://localhost:3000"],
+     origins=["http://localhost:3000", "http://localhost:5173"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"])
 

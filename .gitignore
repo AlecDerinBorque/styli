@@ -1,9 +1,11 @@
-# Secrets (Supabase keys will live here)
+# Secrets
 .env
+backend/.env
 
 # Python virtual environment
 venv/
 .venv
+env/
 
 # Python cache
 __pycache__/
@@ -12,14 +14,12 @@ __pycache__/
 # Mac junk
 .DS_Store
 
-# Frontend dependencies
+# Node
 node_modules/
-env/
-backend/.env
-backend/test_route.py
-backend/image.png
 
-test_outfits.py
-test_generator.py
+# Local test scripts and images
+backend/test_route.py
+backend/test_outfits.py
+backend/test_generator.py
 *.png
 *.jpg
