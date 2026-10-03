@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Icons } from "./icons";
 
 const GeneratedOutfit = () => {
   const location = useLocation();
@@ -72,7 +73,7 @@ const GeneratedOutfit = () => {
         </p>
 
         <div className="outfit-container">
-          <button className="suggestion-arrow" onClick={prevOutfit}>Previous</button>
+          <Icons.LeftArrow className="suggestion-arrow" onClick={prevOutfit} />
 
           {outfitSuggestions[currentIndex].map((item, index) => (
             <div key={index} className="large-image-container">
@@ -86,7 +87,7 @@ const GeneratedOutfit = () => {
             </div>
           ))}
 
-          <button className="suggestion-arrow" onClick={nextOutfit}>Next</button>
+          <Icons.RightArrow className="suggestion-arrow" onClick={nextOutfit} />
         </div>
 
         <button onClick={() => navigate("/preferences")}>Try different preferences</button>

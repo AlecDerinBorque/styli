@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Icons } from "./icons";
 
 const API = "http://127.0.0.1:5000";
 
@@ -91,12 +92,13 @@ const Preferences = () => {
       </div>
 
       <button className="generate-btn" onClick={handleGenerate} disabled={isGenerating}>
-        Generate
+        <Icons.Generate className="generate" /> Generate
       </button>
 
       {isGenerating && (
         <div className="popup-overlay">
           <div className="popup-content">
+            <Icons.Loading className="spinner" />
             <p id="popup-text">Generating your outfit...</p>
           </div>
         </div>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Confirmation from "./confirmation";
+import { Icons } from "./icons";
+import Gallery from "./gallery";
 
 const API = "http://127.0.0.1:5000";
 
@@ -12,6 +14,8 @@ function HomePage() {
     existingClassifications: [],
     newClassifications: [],
   });
+  const [showGallery, setShowGallery] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
@@ -119,31 +123,51 @@ function HomePage() {
             based on your uploaded wardrobe.
           </h2>
           <label className="upload-btn">
-            Upload
+            <Icons.Upload className="upload" /> Upload
             <input type="file" multiple onChange={handleUpload} hidden />
           </label>
           <button className="generate-btn" onClick={handleGenerate}>
-            Generate
+            <Icons.Generate className="generate" /> Generate
           </button>
         </div>
 
-        <div className="gallery-container">
-          <h1>My Wardrobe</h1>
-          <div className="gallery">
-            <div className="image-grid">
-              {wardrobeItems.map((item, i) => (
-                <div key={i} className="image-container">
-                  <img src={item.image} alt={item.sub_category} />
-                </div>
-              ))}
+        {!showGallery && (
+          <div className="gallery-container">
+            <h1>My Wardrobe</h1>
+            <div className="gallery">
+              <div className="image-grid">
+                {[
+                  { icon: <Icons.Shirt className="category-icon" />, label: "Tops" },
+                  { icon: <Icons.Shorts className="category-icon" />, label: "Bottoms" },
+                  { icon: <Icons.Shoe className="category-icon" />, label: "Shoes" },
+                  { icon: <Icons.Jacket className="category-icon" />, label: "Outerwear" },
+                  { icon: <Icons.Dress className="category-icon" />, label: "Dress" },
+                  { icon: <Icons.Clothing className="category-icon" />, label: "All" },
+                ].map(({ icon, label }) => (
+                  <div
+                    key={label}
+                    className="category-box"
+                    onClick={() => {
+                      setSelectedCategory(label);
+                      setShowGallery(true);
+                    }}
+                  >
+                    {icon}
+                    <p className="category-label">{label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          {wardrobeItems.length === 0 && (
-            <p className="gallery-placeholder">
-              No items yet. Upload something to get started.
-            </p>
-          )}
-        </div>
+        )}
+
+        {showGallery && (
+          <Gallery
+            wardrobeItems={wardrobeItems}
+            selectedCategory={selectedCategory}
+            onClose={() => setShowGallery(false)}
+          />
+        )}
       </div>
 
       {showConfirmation && (
